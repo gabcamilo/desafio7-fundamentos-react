@@ -1,6 +1,4 @@
-mport React, { useState, useEffect } from 'react';
-
-import { format, parseISO } from 'date-fns';
+import React, { useState, useEffect } from 'react';
 
 import income from '../../assets/income.svg';
 import outcome from '../../assets/outcome.svg';
@@ -37,27 +35,26 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadTransactions(): Promise<void> {
-      const { data } = await api.get('transactions');
+      const response = await api.get('/transactions');
 
-      const formattedTransactions = data.transactions.map(
+      const transactionsFormatted = response.data.transactions.map(
         (transaction: Transaction) => ({
           ...transaction,
-          formattedValue:
-            transaction.type === 'income'
-              ? `${formatValue(transaction.value)}`
-              : `- ${formatValue(transaction.value)}`, // eslint-disable-next-line
-          created_at: format(parseISO(String(transaction.created_at)), "dd'/'MM'/'yyyy")
+          formattedValue: formatValue(transaction.value),
+          formattedDate: new Date(transaction.created_at).toLocaleDateString(
+            'pt-br',
+          ),
         }),
       );
 
-      const formattedBalance = {
-        income: formatValue(Number(data.balance.income)),
-        outcome: formatValue(Number(data.balance.outcome)),
-        total: formatValue(Number(data.balance.total)),
+      const balanceFormatted = {
+        income: formatValue(response.data.balance.income),
+        outcome: formatValue(response.data.balance.outcome),
+        total: formatValue(response.data.balance.total),
       };
 
-      setTransactions(formattedTransactions);
-      setBalance(formattedBalance);
+      setTransactions(transactionsFormatted);
+      setBalance(balanceFormatted);
     }
 
     loadTransactions();
@@ -103,19 +100,17 @@ const Dashboard: React.FC = () => {
             </thead>
 
             <tbody>
-              {transactions &&
-                transactions.map(transaction => (
-                  <React.Fragment key={transaction.id}>
-                    <tr>
-                      <td className="title">{transaction.title}</td>
-                      <td className={transaction.type}>
-                        {transaction.formattedValue}
-                      </td>
-                      <td>{transaction.category.title}</td>
-                      <td>{transaction.created_at}</td>
-                    </tr>
-                  </React.Fragment>
-                ))}
+              {transactions.map(transaction => (
+                <tr key={transaction.id}>
+                  <td className="title">{transaction.title}</td>
+                  <td className={transaction.type}>
+                    {transaction.type === 'outcome' && ' - '}
+                    {transaction.formattedValue}
+                  </td>
+                  <td>{transaction.category.title}</td>
+                  <td>{transaction.formattedDate}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </TableContainer>
@@ -125,3 +120,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
